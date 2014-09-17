@@ -3688,8 +3688,8 @@ static unsigned get_color_profile(ColorProfile* profile,
         }
       }
 
-      /* Color key cannot be used if an opaque pixel also has that RGB color. */
-      if(!profile->alpha_done && a == 255 && profile->key
+      /* Color key cannot be used if a non-transparent pixel also has that RGB color. */
+      if(!profile->alpha_done && a != 0 && profile->key
           && r == profile->key_r && g == profile->key_g && b == profile->key_b)
       {
           profile->alpha = 1;
@@ -3729,6 +3729,26 @@ static unsigned get_color_profile(ColorProfile* profile,
         break;
       }
     };
+
+    // double verify the profile key
+    if (profile->key)
+    {
+      for(i = 0; i < numpixels; i++)
+      {
+        unsigned char r = 0, g = 0, b = 0, a = 0;
+        error = getPixelColorRGBA8(&r, &g, &b, &a, in, i, mode, fix_png);
+        if(error) break;
+
+        if (a != 0 && r == profile->key_r && g == profile->key_g && b == profile-> key_b)
+        {
+          profile->alpha = 1;
+          profile->alpha_done = 1;
+          profile->greybits_done = 1;
+
+          break;
+        }
+      }
+    }
   }
 
   /*make the profile's key always 16-bit for consistency*/
